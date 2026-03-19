@@ -15,10 +15,11 @@ BLUE = Fore.BLUE
 RESET = "\033[0m"
 BRIGHT = Style.BRIGHT
 
-modulesloaded = 0
+modulesloaded = 1
 version = "V1.0"
 current_dir = os.getcwd()
 username_pc = os.getlogin()
+backdoor_types = "Basic Reverse Shell"
 
 if sys.platform.startswith("win"):
     os_name = "Windows"
@@ -63,10 +64,16 @@ def clear():
     os.system("clear" if os.name != "nt" else "cls")
 
 def sutils():
-    print(f"[{GREEN}+{RESET}] NullSec Initialized")
     sys.stdout.write(f"\x1b]2;nullsec | Modules active: {modulesloaded}\x07")
 
 def banner():
+    sxlar = Text.from_ansi(f"[{RED}GITHUB{RESET}] https://github.com/sxlar333/nullsec  [{RED}DISCORD{RESET}] https://discord.gg/dwte3mus4W")
+    console.print(
+        Align.center(
+            Panel.fit(sxlar, border_style="bright_red")
+        )
+    )
+
     banner = r"""
      ███▄    █  █    ██  ██▓     ██▓      ██████ ▓█████  ▄████▄  
      ██ ▀█   █  ██  ▓██▒▓██▒    ▓██▒    ▒██    ▒ ▓█   ▀ ▒██▀ ▀█  
@@ -82,7 +89,7 @@ def banner():
     colored_banner = Text(banner, style="bold red",)
     console.print(Align.center(colored_banner))
     
-    info = Text.from_ansi(f"NullSec [{RED}{version}{RESET}]  [{RED}INFO{RESET}] Makes backdoors easy")
+    info = Text.from_ansi(f"NullSec [{RED}{version}{RESET}]  [{RED}INFO{RESET}] Makes backdoors easy  [{RED}BACKDOORS{RESET}] 1")
     console.print(
         Align.center(
             Panel.fit(info, border_style="bright_red")
@@ -91,7 +98,7 @@ def banner():
 
 def menu():
     menu_options = Text.from_ansi(f"""
-    [{RED}echo{RESET}] echo
+    [{RED}echo{RESET}] echo         
     [{RED}cd{RESET}] cd
     [{RED}pwd{RESET}] pwd
     [{RED}clear{RESET}] clear
@@ -136,7 +143,9 @@ def main():
     clear()
     banner()
     menu()
+    sutils()
     input_loop()
+
 
 if __name__ == "__main__":
     main()
