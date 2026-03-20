@@ -3,23 +3,23 @@ from rich.console import Console
 from rich.align import Align
 from rich.text import Text
 from rich.panel import Panel
+from program.builder import build_menu
 
 console = Console()
 import os, time, sys
 init(autoreset=True)
 
-RED = "\033[31m"
+RED = Fore.RED
 GREEN = Fore.GREEN
 YELLOW = Fore.GREEN
 BLUE = Fore.BLUE
-RESET = "\033[0m"
+RESET = Style.RESET_ALL
 BRIGHT = Style.BRIGHT
 
 modulesloaded = 1
 version = "V1.0"
 current_dir = os.getcwd()
 username_pc = os.getlogin()
-backdoor_types = "Basic Reverse Shell"
 
 if sys.platform.startswith("win"):
     os_name = "Windows"
@@ -28,11 +28,38 @@ elif sys.platform.startswith("linux"):
 else:
     os_name = "Unknown"
 
+def handle_builder(args):
+    build_menu()
+
+def handle_help(args):
+    help = Text.from_ansi(f"""
+[{RED}Developer{RESET}] sxlar/ez
+[{RED}Commands{RESET}] command --arg
+
+""")
+    console.print(
+        Panel.fit(help, border_style="bold red", title="Help")
+    )
+
+def handle_ls(args):
+    path = args[0] if args else "."
+    
+    try:
+        for item in os.listdir(path):
+            print(item)
+    except FileNotFoundError:
+        print(f"[{RED}!{RESET}] Directory not found")
+
+def handle_open(args):
+    filepath = args[0]
+    with open(filepath, "r") as f:
+        print(f.read())
+
 def handle_cd(args):
     global current_dir
 
     if not args:
-        print("Usage: cd <path>")
+        print(f"[{RED}Usage{RESET}] cd <path>")
         return
 
     path = args[0]
@@ -42,7 +69,6 @@ def handle_cd(args):
     if os.path.isdir(new_path):
         current_dir = new_path
         os.chdir(new_path) 
-        print("Now in:", current_dir)
     else:
         print("No such directory:", path)
 
@@ -70,7 +96,7 @@ def banner():
     sxlar = Text.from_ansi(f"[{RED}GITHUB{RESET}] https://github.com/sxlar333/nullsec  [{RED}DISCORD{RESET}] https://discord.gg/dwte3mus4W")
     console.print(
         Align.center(
-            Panel.fit(sxlar, border_style="bright_red")
+            Panel.fit(sxlar, border_style="bright_red", title="Links")
         )
     )
 
@@ -98,13 +124,13 @@ def banner():
 
 def menu():
     menu_options = Text.from_ansi(f"""
-    [{RED}echo{RESET}] echo         
-    [{RED}cd{RESET}] cd
-    [{RED}pwd{RESET}] pwd
-    [{RED}clear{RESET}] clear
-    [{RED}e{RESET}/{RED}exit{RESET}] Exit
+    [{RED}echo{RESET}] echo         [{RED}help{RESET}] help
+    [{RED}cd{RESET}] cd             [{RED}open{RESET}] open (file)
+    [{RED}pwd{RESET}] pwd           [{RED}ls/dir{RESET}] ls/dir
+    [{RED}clear{RESET}] clear       [{RED}exploits{RESET}] exploit creation
+    [{RED}e{RESET}/{RED}exit{RESET}] Exit       [{RED}?{RESET}]
     """)
-    console.print(Panel(menu_options, title="NullSec Menu", border_style="red"))
+    console.print(Panel(menu_options, title="NullSec Commands", border_style="red"))
 
 def show_banner():
     banner()
@@ -118,10 +144,15 @@ def input_loop():
         "echo": handle_echo,
         "cd": handle_cd,
         "pwd": handle_pwd,
+        "help": handle_help,
+        "open": handle_open,
+        "ls": handle_ls,
+        "dir": handle_ls,
+        "exploit": handle_builder,
     }
     while True:
         uin = input(f"""
-{RED}┌──{RESET}({username_pc}{RED}@{RESET}{os_name}){RED}─{RESET}[~/NullSec {RED}{version}{RESET}]
+{RED}┌──{RESET}({username_pc}{RED}@{RESET}{os_name}){RED}─{RESET}[~/{RED}Null{RESET}Sec {RED}{version}{RESET}]
 {RED}│{RESET}                      
 {RED}└─{RESET}$ """).lower()
         
