@@ -18,10 +18,10 @@ console = Console()
 init(autoreset=True)
 
 output_folder = "output/"
+PORT = "change this"
+IP = "change this"
 
 def build_menu():
-    PORT = "change_this"
-    IP = "change_this"
     banner = Text.from_ansi(rf"""
             \
             /                                 />           
@@ -77,5 +77,10 @@ def build_menu():
         Panel(menu_view, border_style="bold red", title="Settings")
     )
 
+def port():
+    global PORT
+    PORT = input(f"[{RED}PORT{RESET}] {RED}>{RESET} ")
 
-build_menu()
+def ip():
+    global IP
+    IP = input(f"[{RED}IP{RESET}] {RED}>{RESET} ")

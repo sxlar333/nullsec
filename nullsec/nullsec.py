@@ -3,7 +3,7 @@ from rich.console import Console
 from rich.align import Align
 from rich.text import Text
 from rich.panel import Panel
-from program.builder import build_menu
+from program.builder import build_menu, ip, port
 
 console = Console()
 import os, time, sys
@@ -27,6 +27,12 @@ elif sys.platform.startswith("linux"):
     os_name = "Linux"
 else:
     os_name = "Unknown"
+
+def handle_ip(args):
+    ip()
+
+def handle_port(args):
+    port()
 
 def handle_builder(args):
     build_menu()
@@ -124,11 +130,11 @@ def banner():
 
 def menu():
     menu_options = Text.from_ansi(f"""
-    [{RED}echo{RESET}] echo         [{RED}help{RESET}] help
-    [{RED}cd{RESET}] cd             [{RED}open{RESET}] open (file)
-    [{RED}pwd{RESET}] pwd           [{RED}ls/dir{RESET}] ls/dir
-    [{RED}clear{RESET}] clear       [{RED}exploits{RESET}] exploit creation
-    [{RED}e{RESET}/{RED}exit{RESET}] Exit       [{RED}?{RESET}]
+    [{RED}echo{RESET}] echo         [{RED}help{RESET}] help             [{RED}ip{RESET}] set ip
+    [{RED}cd{RESET}] cd             [{RED}open{RESET}] open (file)      [{RED}?{RESET}]
+    [{RED}pwd{RESET}] pwd           [{RED}ls/dir{RESET}] ls/dir         [{RED}?{RESET}]
+    [{RED}clear{RESET}] clear       [{RED}exploits{RESET}] dashboard    [{RED}?{RESET}]
+    [{RED}e{RESET}/{RED}exit{RESET}] Exit       [{RED}port{RESET}] set port         [{RED}?{RESET}]
     """)
     console.print(Panel(menu_options, title="NullSec Commands", border_style="red"))
 
@@ -149,6 +155,8 @@ def input_loop():
         "ls": handle_ls,
         "dir": handle_ls,
         "exploit": handle_builder,
+        "ip": handle_ip,
+        "port": handle_port,
     }
     while True:
         uin = input(f"""
