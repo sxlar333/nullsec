@@ -3,7 +3,7 @@ from rich.console import Console
 from rich.align import Align
 from rich.text import Text
 from rich.panel import Panel
-from program.builder import build_menu, ip, port
+from program.builder import build_menu, ip, port, build
 
 console = Console()
 import os, time, sys
@@ -27,6 +27,9 @@ elif sys.platform.startswith("linux"):
     os_name = "Linux"
 else:
     os_name = "Unknown"
+
+def handle_build(args):
+    build()
 
 def handle_ip(args):
     ip()
@@ -131,7 +134,7 @@ def banner():
 def menu():
     menu_options = Text.from_ansi(f"""
     [{RED}echo{RESET}] echo         [{RED}help{RESET}] help             [{RED}ip{RESET}] set ip
-    [{RED}cd{RESET}] cd             [{RED}open{RESET}] open (file)      [{RED}?{RESET}]
+    [{RED}cd{RESET}] cd             [{RED}open{RESET}] open (file)      [{RED}build{RESET}] builds exploit
     [{RED}pwd{RESET}] pwd           [{RED}ls/dir{RESET}] ls/dir         [{RED}?{RESET}]
     [{RED}clear{RESET}] clear       [{RED}exploits{RESET}] dashboard    [{RED}?{RESET}]
     [{RED}e{RESET}/{RED}exit{RESET}] Exit       [{RED}port{RESET}] set port         [{RED}?{RESET}]
@@ -157,6 +160,7 @@ def input_loop():
         "exploit": handle_builder,
         "ip": handle_ip,
         "port": handle_port,
+        "build": handle_build,
     }
     while True:
         uin = input(f"""
