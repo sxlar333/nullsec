@@ -12,7 +12,7 @@ BLUE = Fore.BLUE
 RESET = Style.RESET_ALL
 BRIGHT = Style.BRIGHT
 
-import os, socket
+import os
 
 console = Console()
 init(autoreset=True)
