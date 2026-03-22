@@ -38,8 +38,8 @@ def build_menu():
     current_exploits_available = Text.from_ansi(f"""
     [{RED}RVSHELL{RESET}]: 1
     [{RED}RAT{RESET}]: 0
-
-
+    [{RED}STEALER{RESET}]: 0
+    [{RED}LOGGER{RESET}]: 0
 
 
 
