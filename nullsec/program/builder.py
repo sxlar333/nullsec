@@ -20,6 +20,7 @@ init(autoreset=True)
 output_folder = "output/"
 PORT = "change this"
 IP = "change this"
+OS = "default/linux"
 
 def build_menu():
     banner = Text.from_ansi(rf"""
@@ -69,8 +70,8 @@ def build_menu():
     )
     
     menu_view = Text.from_ansi(f"""
-    [{RED}PORT{RESET}] {PORT}
-    [{RED}IP{RESET}] {IP}
+    [{RED}PORT{RESET}] {PORT}           [{RED}OS{RESET}] {OS}
+    [{RED}IP{RESET}] {IP}               [{RED}?{RESET}]
     
 """)
     console.print(
@@ -85,6 +86,11 @@ def ip():
     global IP
     IP = input(f"[{RED}IP{RESET}] {RED}>{RESET} ")
 
+def os():
+    global OS 
+    OS = input(f"[{RED}OS{RESET}] {RED}>{RESET} ")
+
+# maybe add functionality for os specific exploits? --deltadude
 def build():
     output = f"""\
 import socket, subprocess, os
