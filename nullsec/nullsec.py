@@ -124,7 +124,7 @@ def banner():
     colored_banner = Text(banner, style="bold red",)
     console.print(Align.center(colored_banner))
     
-    info = Text.from_ansi(f"NullSec [{RED}{version}{RESET}]  [{RED}INFO{RESET}] Makes backdoors easy  [{RED}BACKDOORS{RESET}] 1")
+    info = Text.from_ansi(f"NullSec [{RED}{version}{RESET}]  [{RED}INFO{RESET}] Swiss Army Knife  [{RED}PRE-SCRIPTS{RESET}] 1")
     console.print(
         Align.center(
             Panel.fit(info, border_style="bright_red")
@@ -136,7 +136,7 @@ def menu():
     [{RED}echo{RESET}] echo         [{RED}help{RESET}] help             [{RED}ip{RESET}] set ip
     [{RED}cd{RESET}] cd             [{RED}open{RESET}] open (file)      [{RED}build{RESET}] builds exploit
     [{RED}pwd{RESET}] pwd           [{RED}ls/dir{RESET}] ls/dir         [{RED}?{RESET}]
-    [{RED}clear{RESET}] clear       [{RED}exploits{RESET}] dashboard    [{RED}?{RESET}]
+    [{RED}clear{RESET}] clear       [{RED}scripts{RESET}] dashboard    [{RED}?{RESET}]
     [{RED}e{RESET}/{RED}exit{RESET}] Exit       [{RED}port{RESET}] set port         [{RED}?{RESET}]
     """)
     console.print(Panel(menu_options, title="NullSec Commands", border_style="red"))
@@ -157,7 +157,7 @@ def input_loop():
         "open": handle_open,
         "ls": handle_ls,
         "dir": handle_ls,
-        "exploit": handle_builder,
+        "scripts": handle_builder,
         "ip": handle_ip,
         "port": handle_port,
         "build": handle_build,
