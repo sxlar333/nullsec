@@ -1,0 +1,49 @@
+name: Build Executables
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            artifact_name: nullsec.exe
+            asset_name: nullsec-${{ github.ref_name }}-windows.exe
+          - os: ubuntu-latest
+            artifact_name: nullsec
+            asset_name: nullsec-${{ github.ref_name }}-linux
+          - os: macos-latest
+            artifact_name: nullsec
+            asset_name: nullsec-${{ github.ref_name }}-macos
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install pyinstaller
+          pip install -r requirements.txt
+
+      - name: Build executable
+        run: pyinstaller --onefile --name nullsec nullsec.py
+        env:
+          APP_VERSION: ${{ github.ref_name }}
+
+      - name: Upload to Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/${{ matrix.artifact_name }}
+          name: Release ${{ github.ref_name }}
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
