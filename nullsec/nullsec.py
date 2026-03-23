@@ -781,7 +781,7 @@ def banner():
     console.print(Align.center(Panel.fit(links, border_style=RICH_STYLE, title="Links")))
     slow_print(logo)
     info = Text.from_ansi(
-        f"NullSec [{RED}{version}{RESET}]  [{RED}INFO{RESET}] Recon & CTF Toolkit"
+        f"NullSec [{RED}{version}{RESET}]  [{RED}INFO{RESET}] Recon/Network & CTF Toolkit"
     )
     console.print(Align.center(Panel.fit(info, border_style=RICH_STYLE)))
 
