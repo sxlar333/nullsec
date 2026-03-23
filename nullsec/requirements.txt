@@ -1,2 +1,6 @@
-rich
 colorama
+rich
+pyautogui
+keyboard
+psutil
+win10toast; sys_platform == "win32"
