@@ -27,6 +27,48 @@ elif sys.platform.startswith("linux"):
 else:
     os_name = "Unknown"
 
+# ─── Theme system ──────────────────────────────────────────────────────────────
+
+THEMES = {
+    "red":    {"primary": Fore.RED,     "accent": Fore.YELLOW,  "rich": "bold red",     "ansi": "\033[1;31m"},
+    "green":  {"primary": Fore.GREEN,   "accent": Fore.CYAN,    "rich": "bold green",   "ansi": "\033[1;32m"},
+    "cyan":   {"primary": Fore.CYAN,    "accent": Fore.GREEN,   "rich": "bold cyan",    "ansi": "\033[1;36m"},
+    "blue":   {"primary": Fore.BLUE,    "accent": Fore.CYAN,    "rich": "bold blue",    "ansi": "\033[1;34m"},
+    "yellow": {"primary": Fore.YELLOW,  "accent": Fore.RED,     "rich": "bold yellow",  "ansi": "\033[1;33m"},
+    "purple": {"primary": Fore.MAGENTA, "accent": Fore.CYAN,    "rich": "bold magenta", "ansi": "\033[1;35m"},
+}
+THEME_FILE = ".trollsec_theme"
+
+def load_theme():
+    try:
+        with open(THEME_FILE) as f:
+            name = f.read().strip()
+        if name in THEMES:
+            return name
+    except FileNotFoundError:
+        pass
+    return "red"
+
+current_theme = load_theme()
+RED        = THEMES[current_theme]["primary"]
+RICH_STYLE = THEMES[current_theme]["rich"]
+ANSI_STYLE = THEMES[current_theme]["ansi"]
+
+# ─── Changelog ─────────────────────────────────────────────────────────────────
+
+CHANGELOG = [
+    ("V1.0", [
+        "Initial release",
+        "10 troll scripts: BSOD, rickroll, fake virus, notifications,",
+        "  screamer, desktop chaos, fake update, keyboard troll,",
+        "  desktop flip, activate watermark",
+        "Windows + Linux payload targets",
+        "Typewriter banner effect",
+        "Theme switcher",
+        "Tab completion",
+    ]),
+]
+
 # ─── Handlers ─────────────────────────────────────────────────────────────────
 
 def handle_help(args):
@@ -58,7 +100,7 @@ def handle_help(args):
 [{RED}Other{RESET}]
   help            Show this menu
 """)
-    console.print(Panel.fit(help_text, border_style="bold red", title="TrollSec Help"))
+    console.print(Panel.fit(help_text, border_style=RICH_STYLE, title="TrollSec Help"))
 
 def handle_ls(args):
     path = args[0] if args else "."
@@ -169,6 +211,39 @@ def handle_payload(args):
         return
     set_os_target(args[0])
 
+def handle_theme(args):
+    global current_theme, RED, RICH_STYLE, ANSI_STYLE
+    if not args:
+        print(f"\n  Current theme: {current_theme}")
+        print(f"  Available:     {', '.join(THEMES.keys())}\n")
+        return
+    name = args[0].lower()
+    if name not in THEMES:
+        print(f"[{RED}!{RESET}] Unknown theme. Choose from: {', '.join(THEMES.keys())}")
+        return
+    current_theme = name
+    RED        = THEMES[name]["primary"]
+    RICH_STYLE = THEMES[name]["rich"]
+    ANSI_STYLE = THEMES[name]["ansi"]
+    globals()["RED"]        = RED
+    globals()["RICH_STYLE"] = RICH_STYLE
+    globals()["ANSI_STYLE"] = ANSI_STYLE
+    with open(THEME_FILE, "w") as f:
+        f.write(name)
+    print(f"[{GREEN}+{RESET}] Theme set to: {name}")
+
+def handle_changelog(args):
+    text = Text.from_ansi(f"\n[{RED}Version History{RESET}]\n")
+    for ver, changes in reversed(CHANGELOG):
+        text.append(f"\n  {ver}\n", style="bold")
+        for c in changes:
+            text.append(f"    • {c}\n")
+    console.print(Panel.fit(text, border_style=RICH_STYLE, title="Changelog"))
+
+def handle_back(args):
+    clear()
+    raise SystemExit("__back__")
+
 # ─── Core ──────────────────────────────────────────────────────────────────────
 
 def clear():
@@ -177,12 +252,12 @@ def clear():
 def sutils():
     sys.stdout.write(f"\x1b]2;TrollSec {version}\x07")
 
-def slow_print(text, delay=0.045, style="\033[1;31m"):
+def slow_print(text, delay=0.045):
     reset = "\033[0m"
     width = os.get_terminal_size().columns
     for line in text.splitlines():
         pad = max(0, (width - len(line)) // 2)
-        sys.stdout.write(" " * pad + style + line + reset + "\n")
+        sys.stdout.write(" " * pad + ANSI_STYLE + line + reset + "\n")
         sys.stdout.flush()
         time.sleep(delay)
 
@@ -199,13 +274,13 @@ def banner():
         f"[{RED}GITHUB{RESET}] https://github.com/sxlar333/nullsec  "
         f"[{RED}DISCORD{RESET}] https://discord.gg/dwte3mus4W"
     )
-    console.print(Align.center(Panel.fit(links, border_style="bright_red", title="Links")))
+    console.print(Align.center(Panel.fit(links, border_style=RICH_STYLE, title="Links")))
     slow_print(logo)
     info = Text.from_ansi(
         f"TrollSec [{RED}{version}{RESET}]  [{RED}INFO{RESET}] Prank Script Builder  "
         f"[{RED}SCRIPTS{RESET}] 10"
     )
-    console.print(Align.center(Panel.fit(info, border_style="bright_red")))
+    console.print(Align.center(Panel.fit(info, border_style=RICH_STYLE)))
 
 def menu():
     menu_options = Text.from_ansi(f"""
@@ -213,9 +288,9 @@ def menu():
   [{RED}Encoding{RESET}]   encode  decode  (b64/hex)
   [{RED}Network{RESET}]    ping
   [{RED}Files{RESET}]      ls  cd  pwd  open  echo  clear
-  [{RED}Other{RESET}]      help  exit
+  [{RED}Other{RESET}]      theme  changelog  back  help  exit
     """)
-    console.print(Panel(menu_options, title="TrollSec Commands", border_style="red"))
+    console.print(Panel(menu_options, title="TrollSec Commands", border_style=RICH_STYLE))
 
 def show_banner():
     banner()
@@ -223,23 +298,32 @@ def show_banner():
 
 def input_loop():
     commands = {
-        "clear":     handle_clear,
-        "exit":      handle_exit,
-        "e":         handle_exit,
-        "echo":      handle_echo,
-        "cd":        handle_cd,
-        "pwd":       handle_pwd,
-        "help":      handle_help,
-        "open":      handle_open,
-        "ls":        handle_ls,
-        "dir":       handle_ls,
-        "ping":      handle_ping,
-        "encode":    handle_encode,
-        "decode":    handle_decode,
-        "scripts":   handle_builder,
-        "build":     handle_build,
-        "--payload": handle_payload,
+        "clear":      handle_clear,
+        "exit":       handle_exit,
+        "e":          handle_exit,
+        "echo":       handle_echo,
+        "cd":         handle_cd,
+        "pwd":        handle_pwd,
+        "help":       handle_help,
+        "open":       handle_open,
+        "ls":         handle_ls,
+        "dir":        handle_ls,
+        "ping":       handle_ping,
+        "encode":     handle_encode,
+        "decode":     handle_decode,
+        "scripts":    handle_builder,
+        "build":      handle_build,
+        "--payload":  handle_payload,
+        "theme":      handle_theme,
+        "changelog":  handle_changelog,
+        "back":       handle_back,
     }
+
+    def completer(text, state):
+        options = [c for c in commands if c.startswith(text)]
+        return options[state] if state < len(options) else None
+    readline.set_completer(completer)
+    readline.parse_and_bind("tab: complete")
 
     while True:
         uin = input(f"""
@@ -265,7 +349,14 @@ def main():
     banner()
     menu()
     sutils()
-    input_loop()
+    try:
+        input_loop()
+    except SystemExit as e:
+        if str(e) == "__back__":
+            import launcher
+            launcher.main()
+        else:
+            sys.exit()
 
 if __name__ == "__main__":
     main()
