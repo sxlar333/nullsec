@@ -35,7 +35,7 @@ jobs:
           pip install -r requirements.txt
 
       - name: Build executable
-        run: pyinstaller --onefile --name nullsec nullsec.py
+        run: pyinstaller --onefile --name nullsec launcher.py
         env:
           APP_VERSION: ${{ github.ref_name }}
 
