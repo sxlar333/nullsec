@@ -9,6 +9,10 @@ jobs:
   build:
     runs-on: windows-latest
 
+    defaults:
+      run:
+        working-directory: nullsec
+
     steps:
       - uses: actions/checkout@v4
 
@@ -24,14 +28,14 @@ jobs:
           pip install -r requirements.txt
 
       - name: Build executable
-        run: pyinstaller --onefile --name nullsec nullsec.py
+        run: pyinstaller --onefile --name nullsec launcher.py
         env:
           APP_VERSION: ${{ github.ref_name }}
 
       - name: Upload to Release
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/nullsec.exe
+          files: nullsec/dist/nullsec.exe
           name: Release ${{ github.ref_name }}
           generate_release_notes: true
         env:
