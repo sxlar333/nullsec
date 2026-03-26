@@ -14,9 +14,7 @@ jobs:
           - os: windows-latest
             artifact_name: nullsec.exe
             asset_name: nullsec-${{ github.ref_name }}-windows.exe
-          - os: ubuntu-latest
-            artifact_name: nullsec
-            asset_name: nullsec-${{ github.ref_name }}-linux
+
           - os: macos-latest
             artifact_name: nullsec
             asset_name: nullsec-${{ github.ref_name }}-macos
@@ -31,11 +29,12 @@ jobs:
 
       - name: Install dependencies
         run: |
+          python -m pip install --upgrade pip
           pip install pyinstaller
           pip install -r requirements.txt
 
       - name: Build executable
-        run: pyinstaller --onefile --name nullsec launcher.py
+        run: pyinstaller --onefile --name nullsec nullsec.py
         env:
           APP_VERSION: ${{ github.ref_name }}
 
