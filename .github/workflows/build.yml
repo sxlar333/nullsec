@@ -5,16 +5,25 @@ on:
     tags:
       - 'v*'
 
+# 🔐 REQUIRED: allows release creation
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: windows-latest
+
+    # 🔐 IMPORTANT: job-level permissions (fixes 403 issue)
+    permissions:
+      contents: write
 
     defaults:
       run:
         working-directory: nullsec
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -25,18 +34,17 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install pyinstaller
-          pip install -r requirements.txt
+          if exist requirements.txt pip install -r requirements.txt
 
       - name: Build executable
-        run: pyinstaller --onefile --name nullsec launcher.py
-        env:
-          APP_VERSION: ${{ github.ref_name }}
+        run: |
+          pyinstaller --onefile --name nullsec launcher.py
 
-      - name: Upload to Release
+      - name: Upload Release
         uses: softprops/action-gh-release@v2
         with:
-          files: nullsec/dist/nullsec.exe
+          tag_name: ${{ github.ref_name }}
           name: Release ${{ github.ref_name }}
-          generate_release_notes: true
+          files: nullsec/dist/nullsec.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
