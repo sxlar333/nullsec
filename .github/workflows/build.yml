@@ -1,4 +1,4 @@
-name: Build Executables
+name: Build Executable
 
 on:
   push:
@@ -7,17 +7,7 @@ on:
 
 jobs:
   build:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        include:
-          - os: windows-latest
-            artifact_name: nullsec.exe
-            asset_name: nullsec-${{ github.ref_name }}-windows.exe
-
-          - os: macos-latest
-            artifact_name: nullsec
-            asset_name: nullsec-${{ github.ref_name }}-macos
+    runs-on: windows-latest
 
     steps:
       - uses: actions/checkout@v4
@@ -41,7 +31,7 @@ jobs:
       - name: Upload to Release
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/${{ matrix.artifact_name }}
+          files: dist/nullsec.exe
           name: Release ${{ github.ref_name }}
           generate_release_notes: true
         env:
