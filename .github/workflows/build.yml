@@ -1,11 +1,10 @@
-name: Build Executable
+name: Build and Release
 
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
 
-# 🔐 REQUIRED: allows release creation
 permissions:
   contents: write
 
@@ -13,7 +12,6 @@ jobs:
   build:
     runs-on: windows-latest
 
-    # 🔐 IMPORTANT: job-level permissions (fixes 403 issue)
     permissions:
       contents: write
 
@@ -28,19 +26,24 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: "3.11"
 
       - name: Install dependencies
+        shell: pwsh
         run: |
           python -m pip install --upgrade pip
           pip install pyinstaller
-          if exist requirements.txt pip install -r requirements.txt
+
+          if (Test-Path "requirements.txt") {
+            pip install -r requirements.txt
+          }
 
       - name: Build executable
+        shell: pwsh
         run: |
           pyinstaller --onefile --name nullsec launcher.py
 
-      - name: Upload Release
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
