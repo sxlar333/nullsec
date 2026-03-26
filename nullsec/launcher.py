@@ -3,6 +3,8 @@ from rich.console import Console
 from rich.text import Text
 from rich.panel import Panel
 from rich.align import Align
+from nullsec import main as nullsec_main
+from trollsec import main as trollsec_main
 import sys, os, time
 
 console = Console()
@@ -49,11 +51,9 @@ def main():
         choice = input(f"\n[{RED}>{RESET}] ").strip().lower()
 
         if choice == "1":
-            from nullsec import main as nullsec_main
             nullsec_main()
             break
         elif choice == "2":
-            from trollsec import main as trollsec_main
             trollsec_main()
             break
         elif choice in ("q", "quit", "exit"):

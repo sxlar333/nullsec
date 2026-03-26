@@ -1,23 +1,16 @@
-name: Build and Release
+name: Build NullSec
 
 on:
-  push:
-    tags:
-      - "v*"
-
-permissions:
-  contents: write
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version (e.g. 2.5.1)"
+        required: true
+        default: "0.0.1"
 
 jobs:
   build:
     runs-on: windows-latest
-
-    permissions:
-      contents: write
-
-    defaults:
-      run:
-        working-directory: nullsec
 
     steps:
       - name: Checkout repository
@@ -28,26 +21,44 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install dependencies
-        shell: pwsh
-        run: |
-          python -m pip install --upgrade pip
-          pip install pyinstaller
+      - name: Upgrade pip
+        run: python -m pip install --upgrade pip
 
-          if (Test-Path "requirements.txt") {
+      - name: Install dependencies
+        shell: powershell
+        run: |
+          if (Test-Path requirements.txt) {
             pip install -r requirements.txt
           }
 
-      - name: Build executable
-        shell: pwsh
+      - name: Install PyInstaller
+        run: pip install pyinstaller
+
+      - name: Build EXE (NullSec)
         run: |
-          pyinstaller --onefile --name nullsec launcher.py
+          pyinstaller launcher.py `
+            --onefile `
+            --name NullSec
+
+      - name: Rename artifact with version
+        shell: powershell
+        run: |
+          $version = "${{ github.event.inputs.version }}"
+          $src = "dist/NullSec.exe"
+          $dst = "dist/NullSec-v$version.exe"
+          Rename-Item $src $dst
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: NullSec-v${{ github.event.inputs.version }}
+          path: dist/NullSec-v${{ github.event.inputs.version }}.exe
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name }}
-          name: Release ${{ github.ref_name }}
-          files: nullsec/dist/nullsec.exe
+          tag_name: v${{ github.event.inputs.version }}
+          name: NullSec v${{ github.event.inputs.version }}
+          files: dist/NullSec-v${{ github.event.inputs.version }}.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
