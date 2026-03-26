@@ -13,7 +13,7 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout repo
         uses: actions/checkout@v4
 
       - name: Set up Python
@@ -27,38 +27,36 @@ jobs:
       - name: Install dependencies
         shell: powershell
         run: |
-          if (Test-Path requirements.txt) {
-            pip install -r requirements.txt
+          if (Test-Path nullsec\requirements.txt) {
+            pip install -r nullsec\requirements.txt
           }
 
       - name: Install PyInstaller
         run: pip install pyinstaller
 
-      - name: Build EXE (NullSec)
+      - name: Build EXE
+        shell: powershell
         run: |
-          pyinstaller launcher.py `
-            --onefile `
-            --name NullSec
+          cd nullsec
+          pyinstaller launcher.py --onefile --name NullSec
 
-      - name: Rename artifact with version
+      - name: Rename artifact
         shell: powershell
         run: |
           $version = "${{ github.event.inputs.version }}"
-          $src = "dist/NullSec.exe"
-          $dst = "dist/NullSec-v$version.exe"
-          Rename-Item $src $dst
+          Rename-Item "nullsec\dist\NullSec.exe" "nullsec\dist\NullSec-v$version.exe"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: NullSec-v${{ github.event.inputs.version }}
-          path: dist/NullSec-v${{ github.event.inputs.version }}.exe
+          path: nullsec/dist/NullSec-v${{ github.event.inputs.version }}.exe
 
-      - name: Create GitHub Release
+      - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ github.event.inputs.version }}
           name: NullSec v${{ github.event.inputs.version }}
-          files: dist/NullSec-v${{ github.event.inputs.version }}.exe
+          files: nullsec/dist/NullSec-v${{ github.event.inputs.version }}.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
