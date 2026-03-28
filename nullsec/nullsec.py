@@ -1,4 +1,6 @@
 from colorama import Fore, Style, init
+
+CYAN = Fore.CYAN
 from rich.console import Console
 from rich.align import Align
 from rich.text import Text
@@ -32,6 +34,7 @@ BRIGHT = Style.BRIGHT
 version = "V2.1"
 current_dir = os.getcwd()
 username_pc = os.getlogin()
+show_plugins = False
 
 if sys.platform.startswith("win"):
     os_name = "Windows"
@@ -190,6 +193,8 @@ def handle_help(args):
   hexdump <file> [bytes] Hex dump a file
 
 [{RED}Other{RESET}]
+  pro                    NullSec Pro info & payment
+  plugtoggle             Toggle plugins panel on/off
   help                   Show this menu
 """)
     console.print(Panel.fit(help_text, border_style=RICH_STYLE, title="NullSec Help"))
@@ -1075,9 +1080,19 @@ def banner():
     )
     console.print(Align.center(Panel.fit(info, border_style=RICH_STYLE)))
 
+    pro_ad = Text.from_ansi(
+        f"[{YELLOW}⚡ NullSec Pro Available!{RESET}] Advanced WiFi attacks, exploit tools, C2 templates → "
+        f"[{YELLOW}DM sxlar#3333{RESET}] to purchase or join Discord for payment info"
+    )
+    console.print(
+        Align.center(Panel.fit(pro_ad, border_style="bold yellow", title="🎉 UPGRADE"))
+    )
+
 
 def menu():
     from plugins import load_plugins, get_plugin_commands
+
+    global show_plugins
 
     load_plugins()
     plugins = get_plugin_commands()
@@ -1088,13 +1103,13 @@ def menu():
   [{RED}Crypto{RESET}]     encode  decode  url  rot  hashcrack  jwt
   [{RED}Analysis{RESET}]   passcheck  strings  hexdump
   [{RED}Files{RESET}]      ls  cd  pwd  open  echo  clear
-  [{RED}Other{RESET}]      theme  changelog  back  help  exit
+  [{RED}Other{RESET}]      theme  changelog  pro  plugtoggle  back  help  exit
     """)
     console.print(
         Panel(menu_options, title="NullSec Commands", border_style=RICH_STYLE)
     )
 
-    if plugins:
+    if show_plugins and plugins:
         plugin_cmds = "  ".join(
             "  ".join(p.get("commands", [])) for p in plugins.values()
         )
@@ -1104,6 +1119,56 @@ def menu():
                 plugin_text, title=f"Plugins ({len(plugins)})", border_style=RICH_STYLE
             )
         )
+
+
+def show_banner():
+    banner()
+    menu()
+
+
+def handle_pro(args):
+    pro_info = Text.from_ansi(f"""
+[{YELLOW}⚡ NullSec Pro{RESET}]
+
+[{GREEN}Advanced Features:{RESET}]
+ • WiFi deauth attacks (advanced)
+ • PMKID handshake capture
+ • Exploit framework integration
+ • C2 server templates
+ • Reverse shell generators
+ • Priority support
+
+[{YELLOW}Pricing:{RESET}]  Contact sxlar#3333
+
+[{CYAN}Payment:{RESET}]
+ BTC: bc1q2y2gv09s8m0zzsn5mgtdlc2y7t8uuu52g8m99a
+ ETH: 0xE1326914364b99F650d27C6BAC3C21b8d6D16660
+
+ [{RED}DM sxlar#3333{RESET}] to purchase or get help!
+    """)
+    console.print(Panel.fit(pro_info, border_style="bold yellow", title="NullSec Pro"))
+
+
+def handle_plugtoggle(args):
+    from plugins import PLUGINS
+
+    global show_plugins
+
+    if not PLUGINS:
+        console.print(
+            Text.from_ansi(f"[{YELLOW}!{RESET}] No plugins found in plugins folder")
+        )
+        return
+
+    if args and args[0].lower() in ("on", "1", "true"):
+        show_plugins = True
+    elif args and args[0].lower() in ("off", "0", "false"):
+        show_plugins = False
+    else:
+        show_plugins = not show_plugins
+
+    status = "ON" if show_plugins else "OFF"
+    console.print(Text.from_ansi(f"[{GREEN}![{RESET}] Plugins panel: {status}"))
 
 
 def show_banner():
@@ -1150,6 +1215,8 @@ def input_loop():
         "theme": handle_theme,
         "changelog": handle_changelog,
         "back": handle_back,
+        "pro": handle_pro,
+        "plugtoggle": handle_plugtoggle,
     }
 
     # tab completion
