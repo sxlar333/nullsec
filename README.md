@@ -8,11 +8,13 @@ python launcher.py
 
 ```
      ███▄    █  █    ██  ██▓     ██▓      ██████ ▓█████  ▄████▄
-     ██ ▀█   █  ██  ▓██▒▓██▒    ▓██▒    ▒██    ▒ ▓█   ▀ ▒██▀ ▀█
-    ▓██  ▀█ ██▒▓██  ▒██░▒██░    ▒██░    ░ ▓██▄   ▒███   ▒▓█    ▄
-    ▓██▒  ▐▌██▒▓▓█  ░██░▒██░    ▒██░      ▒   ██▒▒▓█  ▄ ▒▓▓▄ ▄██▒
-    ▒██░   ▓██░▒▒█████▓ ░██████▒░██████▒▒██████▒▒░▒████▒▒ ▓███▀ ░
+     ██ ▀█   █  ██  ▓██▒▓██▒    ▓██▒    ▒██    ▒ ▓█   ▀ ▒██▀ ▀█ 
+    ▓██  ▀█ ██▒▓██  ▒██░▒██░    ▒██░    ░ ▓██▄   ▒███   ▒▓█    ▄ 
+    ▓██▒  ▐▌██▒▓▓█  ░██░▒██░    ▒██░      ▒   ██▒▒▓█  ▄ ▒▓▄ ▄██▒
+    ▒██░   ▓██░▒▒█████▓ ░██████▒░██████▒▒██████▒▒░▒████▒▒ ▓███▀ ░ 
 ```
+
+**Version:** V2.1
 
 ---
 
@@ -36,6 +38,10 @@ python launcher.py
 
 **Requirements:** Python 3.8+
 
+**Optional (for advanced tools):**
+- `paramiko` - for SSH key brute-force (`pip install paramiko`)
+- `scapy` - for WiFi deauth attacks (`pip install scapy`) — requires monitor mode WiFi adapter
+
 ---
 
 ## NullSec Commands
@@ -52,6 +58,8 @@ python launcher.py
 | `subdomains` | `subdomains <domain>` | Enumerate subdomains |
 | `geoip` | `geoip <ip\|domain>` | Geolocate an IP or domain |
 | `bannergrab` | `bannergrab <host> <port>` | Grab service banner |
+| `sshbrute` | `sshbrute <host> <port> <wordlist>` | SSH key brute-force |
+| `wifideauth` | `wifideauth <target_mac> <bssid> [iface]` | WiFi deauth attack |
 
 ### System
 | Command | Usage | Description |
@@ -126,6 +134,34 @@ theme purple
 ```
 
 Themes persist between sessions via a local config file.
+
+---
+
+## Plugin System
+
+Place plugins in `nullsec/plugins/` folder. Filenames must contain `null_plugin`.
+
+### Plugin Template
+
+```python
+PLUGIN_INFO = {
+    "name": "plugin_name",
+    "commands": ["cmd1", "cmd2"],
+}
+
+def handle_plugin(args):
+    # Called when any plugin command is run
+    pass
+
+def cmd1(args):
+    # Your command logic here
+    print("[+] cmd1 executed!")
+
+def cmd2(args):
+    print("[+] cmd2 executed!")
+```
+
+Auto-detected on startup — appears in Plugins panel.
 
 ---
 
