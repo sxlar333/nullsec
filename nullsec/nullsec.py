@@ -123,6 +123,9 @@ CHANGELOG = [
             "WiFi deauth attack tool (wifideauth)",
             "Plugin system with auto-detection",
             "Plugins folder: nullsec/plugins/",
+            "Plugin panel toggle (plugtoggle)",
+            "Pro upgrade banner & commands (pro)",
+            "NullSec Pro - COMING SOON (banner ads, waitlist)",
         ],
     ),
     (
@@ -1081,8 +1084,8 @@ def banner():
     console.print(Align.center(Panel.fit(info, border_style=RICH_STYLE)))
 
     pro_ad = Text.from_ansi(
-        f"[{YELLOW}⚡ NullSec Pro Available!{RESET}] Advanced WiFi attacks, exploit tools, C2 templates → "
-        f"[{YELLOW}DM sxlar#3333{RESET}] to purchase or join Discord for payment info"
+        f"[{YELLOW}⚡ NullSec Pro - Coming Soon!{RESET}] Advanced WiFi attacks, exploit tools, C2 templates → "
+        f"[{YELLOW}DM sxlar#3333{RESET}] to join waitlist"
     )
     console.print(
         Align.center(Panel.fit(pro_ad, border_style="bold yellow", title="🎉 UPGRADE"))
@@ -1128,9 +1131,11 @@ def show_banner():
 
 def handle_pro(args):
     pro_info = Text.from_ansi(f"""
-[{YELLOW}⚡ NullSec Pro{RESET}]
+[{YELLOW}⚡ NullSec Pro - COMING SOON{RESET}]
 
-[{GREEN}Advanced Features:{RESET}]
+[{RED}⚠️  Pro features are not released yet! Join the waitlist.{RESET}]
+
+[{GREEN}Planned Features:{RESET}]
  • WiFi deauth attacks (advanced)
  • PMKID handshake capture
  • Exploit framework integration
@@ -1138,13 +1143,9 @@ def handle_pro(args):
  • Reverse shell generators
  • Priority support
 
-[{YELLOW}Pricing:{RESET}]  Contact sxlar#3333
+[{YELLOW}Pricing:{RESET}]  Contact sxlar#3333 for early access
 
-[{CYAN}Payment:{RESET}]
- BTC: bc1q2y2gv09s8m0zzsn5mgtdlc2y7t8uuu52g8m99a
- ETH: 0xE1326914364b99F650d27C6BAC3C21b8d6D16660
-
- [{RED}DM sxlar#3333{RESET}] to purchase or get help!
+ [{CYAN}DM sxlar#3333{RESET}] to join waitlist or get notified when released!
     """)
     console.print(Panel.fit(pro_info, border_style="bold yellow", title="NullSec Pro"))
 
