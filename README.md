@@ -165,22 +165,6 @@ Auto-detected on startup — appears in Plugins panel.
 
 ---
 
-## NullSec Pro (Coming Soon)
-
-NullSec Pro is launching soon with advanced features:
-
-| Feature | Description |
-|---------|-------------|
-| Advanced WiFi Attacks | PMKID, handshake capture, deauth tools |
-| Exploit Framework | Integration with common exploit databases |
-| C2 Server Templates | Ready-to-deploy C2 infrastructure |
-| Reverse Shell Gen | Multiple payload generators |
-| Priority Support | Direct Discord support |
-
-**To join the waitlist:** DM `sxlar#3333` on Discord
-
----
-
 ## Learning Resources
 
 NullSec is built for learning. Good places to practice these tools:
@@ -202,5 +186,5 @@ TrollSec scripts are harmless pranks — use responsibly and only on consenting 
 
 ## Credits
 
-Built by **sxlar/ez**  
+Built by **sxlar/ez** and **mne**
 [GitHub](https://github.com/sxlar333/nullsec) • [Discord](https://discord.gg/dwte3mus4W)
