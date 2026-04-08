@@ -123,9 +123,7 @@ CHANGELOG = [
             "WiFi deauth attack tool (wifideauth)",
             "Plugin system with auto-detection",
             "Plugins folder: nullsec/plugins/",
-            "Plugin panel toggle (plugtoggle)",
-            "Pro upgrade banner & commands (pro)",
-            "NullSec Pro - COMING SOON (banner ads, waitlist)",
+            "Plugin panel toggle (plugtoggle)"
         ],
     ),
     (
@@ -196,7 +194,6 @@ def handle_help(args):
   hexdump <file> [bytes] Hex dump a file
 
 [{RED}Other{RESET}]
-  pro                    NullSec Pro info & payment
   plugtoggle             Toggle plugins panel on/off
   help                   Show this menu
 """)
@@ -1083,15 +1080,6 @@ def banner():
     )
     console.print(Align.center(Panel.fit(info, border_style=RICH_STYLE)))
 
-    pro_ad = Text.from_ansi(
-        f"[{YELLOW}⚡ NullSec Pro - Coming Soon!{RESET}] Advanced WiFi attacks, exploit tools, C2 templates → "
-        f"[{YELLOW}DM sxlar#3333{RESET}] to join waitlist"
-    )
-    console.print(
-        Align.center(Panel.fit(pro_ad, border_style="bold yellow", title="🎉 UPGRADE"))
-    )
-
-
 def menu():
     from plugins import load_plugins, get_plugin_commands
 
@@ -1106,7 +1094,7 @@ def menu():
   [{RED}Crypto{RESET}]     encode  decode  url  rot  hashcrack  jwt
   [{RED}Analysis{RESET}]   passcheck  strings  hexdump
   [{RED}Files{RESET}]      ls  cd  pwd  open  echo  clear
-  [{RED}Other{RESET}]      theme  changelog  pro  plugtoggle  back  help  exit
+  [{RED}Other{RESET}]      theme  changelog  plugtoggle  back  help  exit
     """)
     console.print(
         Panel(menu_options, title="NullSec Commands", border_style=RICH_STYLE)
@@ -1127,28 +1115,6 @@ def menu():
 def show_banner():
     banner()
     menu()
-
-
-def handle_pro(args):
-    pro_info = Text.from_ansi(f"""
-[{YELLOW}⚡ NullSec Pro - COMING SOON{RESET}]
-
-[{RED}⚠️  Pro features are not released yet! Join the waitlist.{RESET}]
-
-[{GREEN}Planned Features:{RESET}]
- • WiFi deauth attacks (advanced)
- • PMKID handshake capture
- • Exploit framework integration
- • C2 server templates
- • Reverse shell generators
- • Priority support
-
-[{YELLOW}Pricing:{RESET}]  Contact sxlar#3333 for early access
-
- [{CYAN}DM sxlar#3333{RESET}] to join waitlist or get notified when released!
-    """)
-    console.print(Panel.fit(pro_info, border_style="bold yellow", title="NullSec Pro"))
-
 
 def handle_plugtoggle(args):
     from plugins import PLUGINS
@@ -1216,7 +1182,6 @@ def input_loop():
         "theme": handle_theme,
         "changelog": handle_changelog,
         "back": handle_back,
-        "pro": handle_pro,
         "plugtoggle": handle_plugtoggle,
     }
 
