@@ -17,7 +17,7 @@ YELLOW = Fore.YELLOW
 RESET = Style.RESET_ALL
 BRIGHT = Style.BRIGHT
 
-version = "V2.1"
+version = "V2.5.6"
 current_dir = os.getcwd()
 username_pc = os.getlogin()
 
